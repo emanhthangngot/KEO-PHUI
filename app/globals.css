@@ -1,0 +1,90 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --bg-main: #080d18;
+  --bg-deep: #050810;
+  --bg-card: #101a2c;
+  --bg-card-secondary: #142238;
+  --border-color: #24354c;
+  --border-light: #324765;
+  --text-main: #f4f8ff;
+  --text-muted: #8ca0bb;
+  --cyan-neon: #56ebd9;
+  --cyan-glow: rgba(86, 235, 217, 0.25);
+  --orange-neon: #ff936a;
+  --orange-glow: rgba(255, 147, 106, 0.25);
+  --yellow-neon: #d6ef7b;
+  --pitch-green: #10b981;
+}
+
+.light-theme {
+  --bg-main: #f0f4f9;
+  --bg-deep: #e2e8f0;
+  --bg-card: #ffffff;
+  --bg-card-secondary: #f8fafc;
+  --border-color: #cbd5e1;
+  --border-light: #94a3b8;
+  --text-main: #09121f;
+  --text-muted: #475569;
+  --cyan-neon: #0d9488;
+  --cyan-glow: rgba(13, 148, 136, 0.2);
+  --orange-neon: #ea580c;
+  --orange-glow: rgba(234, 88, 12, 0.2);
+  --yellow-neon: #65a30d;
+  --pitch-green: #059669;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Tactical pitch grid pattern */
+.pitch-pattern {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.light-theme .pitch-pattern {
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Neon glow animations */
+@keyframes pulse-cyan {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(86, 235, 217, 0.2), inset 0 0 10px rgba(86, 235, 217, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(86, 235, 217, 0.45), inset 0 0 15px rgba(86, 235, 217, 0.2);
+  }
+}
+
+.glow-cyan-pulse {
+  animation: pulse-cyan 2.5s infinite ease-in-out;
+}
+
+/* Metallic skew tags */
+.skew-tag {
+  transform: skewX(-8deg);
+}
+.unskew {
+  transform: skewX(8deg);
+}

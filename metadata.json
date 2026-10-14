@@ -1,0 +1,6 @@
+{
+  "name": "KÈO//FIVE V2 - Sân Phủi TP.HCM",
+  "description": "Nền tảng cáp kèo bóng đá phủi và matchmaking game lobby TP.HCM: đăng tuyển kèo, đội trưởng Ready, phòng VS Esports, sơ đồ chiến thuật và quản lý đội.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
