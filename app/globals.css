@@ -2,36 +2,36 @@
 @import "tw-animate-css";
 
 :root {
-  --bg-main: #080d18;
-  --bg-deep: #050810;
-  --bg-card: #101a2c;
-  --bg-card-secondary: #142238;
-  --border-color: #24354c;
-  --border-light: #324765;
-  --text-main: #f4f8ff;
-  --text-muted: #8ca0bb;
-  --cyan-neon: #56ebd9;
-  --cyan-glow: rgba(86, 235, 217, 0.25);
-  --orange-neon: #ff936a;
-  --orange-glow: rgba(255, 147, 106, 0.25);
-  --yellow-neon: #d6ef7b;
+  --bg-main: #070b14;
+  --bg-deep: #03060c;
+  --bg-card: #0f172a;
+  --bg-card-secondary: #162035;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.15);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --cyan-neon: #38bdf8;
+  --cyan-glow: rgba(56, 189, 248, 0.25);
+  --orange-neon: #fb923c;
+  --orange-glow: rgba(251, 146, 60, 0.25);
+  --yellow-neon: #eab308;
   --pitch-green: #10b981;
 }
 
 .light-theme {
-  --bg-main: #f0f4f9;
+  --bg-main: #f1f5f9;
   --bg-deep: #e2e8f0;
   --bg-card: #ffffff;
   --bg-card-secondary: #f8fafc;
-  --border-color: #cbd5e1;
-  --border-light: #94a3b8;
-  --text-main: #09121f;
-  --text-muted: #475569;
-  --cyan-neon: #0d9488;
-  --cyan-glow: rgba(13, 148, 136, 0.2);
+  --border-color: #e2e8f0;
+  --border-light: #cbd5e1;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --cyan-neon: #0284c7;
+  --cyan-glow: rgba(2, 132, 199, 0.2);
   --orange-neon: #ea580c;
   --orange-glow: rgba(234, 88, 12, 0.2);
-  --yellow-neon: #65a30d;
+  --yellow-neon: #ca8a04;
   --pitch-green: #059669;
 }
 
@@ -52,39 +52,46 @@ body {
   scrollbar-width: none;
 }
 
+/* Glassmorphic card surface */
+.glass-surface {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.light-theme .glass-surface {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
 /* Tactical pitch grid pattern */
 .pitch-pattern {
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 24px 24px;
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 28px 28px;
 }
 
 .light-theme .pitch-pattern {
   background-image: 
-    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-  background-size: 24px 24px;
+    linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
 }
 
 /* Neon glow animations */
 @keyframes pulse-cyan {
   0%, 100% {
-    box-shadow: 0 0 15px rgba(86, 235, 217, 0.2), inset 0 0 10px rgba(86, 235, 217, 0.1);
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.2), inset 0 0 15px rgba(56, 189, 248, 0.05);
   }
   50% {
-    box-shadow: 0 0 25px rgba(86, 235, 217, 0.45), inset 0 0 15px rgba(86, 235, 217, 0.2);
+    box-shadow: 0 0 30px rgba(56, 189, 248, 0.4), inset 0 0 20px rgba(56, 189, 248, 0.15);
   }
 }
 
 .glow-cyan-pulse {
   animation: pulse-cyan 2.5s infinite ease-in-out;
-}
-
-/* Metallic skew tags */
-.skew-tag {
-  transform: skewX(-8deg);
-}
-.unskew {
-  transform: skewX(8deg);
 }

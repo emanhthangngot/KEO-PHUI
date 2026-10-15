@@ -7,11 +7,18 @@ import {
   MatchRoom,
   MatchRequest,
   FilterState,
+  ScheduledMatch,
+  TeamInvite,
+  TeamNotification,
+  CS2MatchOutcome,
 } from '@/lib/types';
 import {
   DEFAULT_USER_TEAM,
   INITIAL_POSTS,
   RIVAL_TEAMS,
+  INITIAL_SCHEDULED_MATCH,
+  INITIAL_TEAM_INVITES,
+  INITIAL_TEAM_NOTIFICATIONS,
   getDayOffset,
 } from '@/lib/data';
 import { Header } from '@/components/Header';
@@ -22,6 +29,8 @@ import { SquadTab } from '@/components/SquadTab';
 import { MatchRoomTab } from '@/components/MatchRoomTab';
 import { ScheduleTab } from '@/components/ScheduleTab';
 import { ProfileTab } from '@/components/ProfileTab';
+import { TeamManagementView } from '@/components/TeamManagementView';
+import { CS2MatchShowcase } from '@/components/CS2MatchShowcase';
 import {
   PostDetailModal,
   TeamEditModal,
@@ -29,7 +38,7 @@ import {
   MatchReportModal,
 } from '@/components/Modals';
 import { sounds } from '@/lib/sounds';
-import { Zap, ArrowRight } from 'lucide-react';
+import { Zap, ArrowRight, Shield, Swords, Trophy, Users, CheckCircle2 } from 'lucide-react';
 
 export function FootballApp() {
   // Navigation & View mode
@@ -104,6 +113,52 @@ export function FootballApp() {
     return null;
   });
 
+  // Scheduled match & attendance quorum
+  const [scheduledMatch, setScheduledMatch] = useState<ScheduledMatch | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('keofive_v2_data');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.scheduledMatch) return parsed.scheduledMatch;
+        }
+      } catch {}
+    }
+    return INITIAL_SCHEDULED_MATCH;
+  });
+
+  // Team invites
+  const [teamInvites, setTeamInvites] = useState<TeamInvite[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('keofive_v2_data');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed.teamInvites)) return parsed.teamInvites;
+        }
+      } catch {}
+    }
+    return INITIAL_TEAM_INVITES;
+  });
+
+  // Team notifications
+  const [teamNotifications, setTeamNotifications] = useState<TeamNotification[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('keofive_v2_data');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed.teamNotifications)) return parsed.teamNotifications;
+        }
+      } catch {}
+    }
+    return INITIAL_TEAM_NOTIFICATIONS;
+  });
+
+  // CS2 Match Outcome Showcase
+  const [cs2Outcome, setCs2Outcome] = useState<CS2MatchOutcome | null>(null);
+  const [isCS2Open, setIsCS2Open] = useState<boolean>(false);
+
   const [isSearchingMatch, setIsSearchingMatch] = useState<boolean>(false);
 
   // Filter state
@@ -141,12 +196,15 @@ export function FootballApp() {
           posts,
           requests,
           activeMatch,
+          scheduledMatch,
+          teamInvites,
+          teamNotifications,
         })
       );
     } catch {
       // Ignore storage errors
     }
-  }, [userTeam, captainReady, posts, requests, activeMatch]);
+  }, [userTeam, captainReady, posts, requests, activeMatch, scheduledMatch, teamInvites, teamNotifications]);
 
   // Actions
   const handleToggleReady = () => {
@@ -299,7 +357,7 @@ export function FootballApp() {
             particleCount: 100,
             spread: 80,
             origin: { y: 0.6 },
-            colors: ['#56ebd9', '#ff936a', '#d6ef7b'],
+            colors: ['#06b6d4', '#f59e0b', '#10b981'],
           });
         }).catch(() => {});
       }
@@ -309,15 +367,19 @@ export function FootballApp() {
     }
   };
 
+  // Complete Match and Trigger CS2 Showcase
   const handleCompleteMatch = (scoreA: number, scoreB: number, mvp: string) => {
     if (!activeMatch) return;
+    const isWin = scoreA >= scoreB;
+
     setUserTeam((prev) => ({
       ...prev,
-      fairPlayScore: Math.min(100, prev.fairPlayScore + 3),
+      fairPlayScore: Math.min(100, prev.fairPlayScore + (isWin ? 5 : 2)),
       wins: scoreA > scoreB ? prev.wins + 1 : prev.wins,
       draws: scoreA === scoreB ? prev.draws + 1 : prev.draws,
       losses: scoreA < scoreB ? prev.losses + 1 : prev.losses,
     }));
+
     setActiveMatch({
       ...activeMatch,
       status: 'completed',
@@ -325,7 +387,89 @@ export function FootballApp() {
       scoreB,
       mvpPlayer: mvp,
     });
-    showToast('Đã lưu kết quả thi đấu & cộng điểm uy tín!');
+
+    // Construct CS2 Outcome
+    const outcome: CS2MatchOutcome = {
+      type: isWin ? 'victory' : 'defeat',
+      scoreA,
+      scoreB,
+      teamA: activeMatch.teamA,
+      teamB: activeMatch.teamB,
+      mvp: {
+        name: mvp,
+        shirt: activeMatch.teamA.roster[0]?.shirt || '09',
+        award: isWin ? 'CẦU THỦ ĐỊNH ĐOẠT TRẬN ĐẤU' : 'CẦU THỦ NỖ LỰC NHẤT TRẬN',
+        mvpStarCount: isWin ? 3 : 1,
+      },
+      headline: isWin ? 'CHIẾN THẮNG TUYỆT ĐỐI' : 'THẤT BẠI ĐẦY TIẾC NUỐI',
+      subheadline: isWin
+        ? `${activeMatch.teamA.name} GIÀNH TRỌN 3 ĐIỂM SÂN PHỦI`
+        : 'ĐỐI THỦ PHẢN CÔNG HIỆU QUẢ Ở HIỆP 2',
+    };
+
+    setCs2Outcome(outcome);
+    setIsCS2Open(true);
+    showToast('Đã lưu kết quả thi đấu & kích hoạt màn CS2 Showcase!');
+  };
+
+  // Quick Trigger for testing CS2 victory/defeat effects
+  const handleTriggerCS2 = (type: 'victory' | 'defeat') => {
+    const isWin = type === 'victory';
+    const outcome: CS2MatchOutcome = {
+      type,
+      scoreA: isWin ? 5 : 2,
+      scoreB: isWin ? 3 : 4,
+      teamA: userTeam,
+      teamB: activeMatch?.teamB || RIVAL_TEAMS[0],
+      mvp: {
+        name: userTeam.roster[0]?.name || 'MINH THẮNG',
+        shirt: userTeam.roster[0]?.shirt || '09',
+        award: isWin ? 'CẦU THỦ XUẤT SẮC NHẤT TRẬN' : 'CẦU THỦ ĐIỂM SÁNG',
+        mvpStarCount: isWin ? 3 : 1,
+      },
+      headline: isWin ? 'CHIẾN THẮNG THUYẾT PHỤC' : 'THẤT BẠI CẦN RÚT KINH NGHIỆM',
+      subheadline: isWin
+        ? 'HÀNG CÔNG TỎA SÁNG RỰC RỠ TRÊN SÂN'
+        : 'ĐỐI THỦ TẬN DỤNG TỐT CƠ HỘI PHẢN CÔNG',
+    };
+
+    setCs2Outcome(outcome);
+    setIsCS2Open(true);
+  };
+
+  // Launch matchmaking when quorum is met in scheduled match
+  const handleLaunchMatchmakingFromSchedule = (match: ScheduledMatch) => {
+    setCaptainReady(true);
+    showToast(`Quân số đã đủ (${match.requiredPlayers}/${match.requiredPlayers})! Đang tìm đối thủ...`);
+    handleQuickMatch(match.district, match.time);
+  };
+
+  // Publish match post to discover feed
+  const handlePublishPostFromSchedule = (match: ScheduledMatch) => {
+    const newPost: MatchPost = {
+      id: `post-sched-${Date.now()}`,
+      mine: true,
+      type: 'Đối thủ',
+      team: userTeam.name,
+      teamId: userTeam.id,
+      format: match.format,
+      date: match.date,
+      time: match.time,
+      district: match.district,
+      level: 'Khá',
+      court: match.courtStatus,
+      venue: match.venue,
+      cost: match.cost,
+      note: match.note,
+      status: 'open',
+      createdAt: 'Vừa xong',
+      requestsCount: 0,
+    };
+
+    setPosts([newPost, ...posts]);
+    setActiveTab('discover');
+    sounds.playReady();
+    showToast('Đã đăng tin tìm đối thủ lên bảng kèo công khai!');
   };
 
   const handleExitMatch = () => {
@@ -336,14 +480,15 @@ export function FootballApp() {
   const handleResetDemo = () => {
     try {
       localStorage.removeItem('keofive_v2_data');
-    } catch {
-      // Ignore
-    }
+    } catch {}
     setUserTeam(DEFAULT_USER_TEAM);
     setCaptainReady(false);
     setPosts(INITIAL_POSTS);
     setRequests([]);
     setActiveMatch(null);
+    setScheduledMatch(INITIAL_SCHEDULED_MATCH);
+    setTeamInvites(INITIAL_TEAM_INVITES);
+    setTeamNotifications(INITIAL_TEAM_NOTIFICATIONS);
     setActiveTab('discover');
     showToast('Đã đặt lại dữ liệu demo ban đầu!');
   };
@@ -361,21 +506,34 @@ export function FootballApp() {
             onApply={handleApplyToPost}
             appliedPostIds={requests.map((r) => r.postId)}
             captainReady={captainReady}
-            onNavigateToSquad={() => setActiveTab('squad')}
+            onNavigateToSquad={() => setActiveTab('team')}
             onNavigateToPost={() => setActiveTab('post')}
             onNavigateToPitches={() => setActiveTab('profile')}
             onTogglePostStatus={handleTogglePostStatus}
           />
         );
-      case 'post':
+      case 'team':
         return (
-          <PostTab
-            userTeamName={userTeam.name}
-            userDistrict={userTeam.district}
-            myPosts={posts.filter((p) => p.mine)}
-            onCreatePost={handleCreatePost}
-            onDeletePost={handleDeletePost}
-            onTogglePostStatus={handleTogglePostStatus}
+          <TeamManagementView
+            userTeam={userTeam}
+            onUpdateTeam={setUserTeam}
+            scheduledMatch={scheduledMatch}
+            onUpdateScheduledMatch={setScheduledMatch}
+            teamInvites={teamInvites}
+            onUpdateTeamInvites={setTeamInvites}
+            teamNotifications={teamNotifications}
+            onAddNotification={(notif) => {
+              const newN: TeamNotification = {
+                ...notif,
+                id: `notif-${Date.now()}`,
+                timestamp: Date.now(),
+                read: false,
+              };
+              setTeamNotifications((prev) => [newN, ...prev]);
+              showToast(`Thông báo mới: ${notif.title}`);
+            }}
+            onLaunchMatchmaking={handleLaunchMatchmakingFromSchedule}
+            onPublishPostFromMatch={handlePublishPostFromSchedule}
           />
         );
       case 'squad':
@@ -389,6 +547,17 @@ export function FootballApp() {
             isSearchingMatch={isSearchingMatch}
           />
         );
+      case 'post':
+        return (
+          <PostTab
+            userTeamName={userTeam.name}
+            userDistrict={userTeam.district}
+            myPosts={posts.filter((p) => p.mine)}
+            onCreatePost={handleCreatePost}
+            onDeletePost={handleDeletePost}
+            onTogglePostStatus={handleTogglePostStatus}
+          />
+        );
       case 'match':
         return (
           <MatchRoomTab
@@ -398,7 +567,8 @@ export function FootballApp() {
             onOpenReportModal={() => setIsReportModalOpen(true)}
             onExitMatch={handleExitMatch}
             onNavigateToDiscover={() => setActiveTab('discover')}
-            onNavigateToSquad={() => setActiveTab('squad')}
+            onNavigateToSquad={() => setActiveTab('team')}
+            onTriggerCS2={handleTriggerCS2}
           />
         );
       case 'schedule':
@@ -429,7 +599,7 @@ export function FootballApp() {
   };
 
   return (
-    <div className={`min-h-screen ${isDark ? 'dark bg-[#060a12]' : 'light-theme bg-[#f0f4f9]'} text-[#f4f8ff] flex flex-col font-sans transition-colors duration-300`}>
+    <div className={`min-h-screen ${isDark ? 'dark bg-[#050810]' : 'light-theme bg-[#eef3f8]'} text-[#f4f8ff] flex flex-col font-sans transition-colors duration-300`}>
       {/* Top Header */}
       <Header
         viewMode={viewMode}
@@ -438,90 +608,102 @@ export function FootballApp() {
         setIsDark={setIsDark}
         soundEnabled={soundEnabled}
         setSoundEnabled={setSoundEnabled}
-        unreadCount={requests.length + (activeMatch ? 1 : 0)}
+        unreadCount={teamNotifications.filter((n) => !n.read).length + requests.length + (activeMatch ? 1 : 0)}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        onTriggerCS2Effect={handleTriggerCS2}
       />
 
       {/* Main Content Arena */}
       <main className="flex-1 flex items-center justify-center p-0 md:p-6 lg:p-8">
         {viewMode === 'phone' ? (
           /* Phone Frame Showcase Layout (Desktop has companion side panel + interactive phone) */
-          <div className="w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-14">
-            {/* Left Companion Explainer Panel (visible on lg+) */}
-            <div className="hidden lg:flex flex-col space-y-4 max-w-sm shrink-0">
-              <span className="text-[11px] font-black tracking-widest text-cyan-400 uppercase">
-                KÈO//FIVE 2.0 · SÂN PHỦI TP.HCM
-              </span>
-              <h1 className="text-4xl font-black italic tracking-tighter text-white leading-[1.05]">
-                TÌM KÈO.<br />
-                <span className="text-cyan-400">MATCH ĐỐI.</span><br />
-                RA SÂN.
+          <div className="w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12">
+            {/* Left Companion Explainer Panel - Sleek Sports Identity */}
+            <div className="hidden lg:flex flex-col space-y-4 max-w-sm shrink-0 rounded-3xl border border-slate-700/80 bg-gradient-to-br from-[#0e1726]/90 via-[#0a101b] to-[#070b14] p-6 shadow-2xl shadow-cyan-950/20 backdrop-blur-xl">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider bg-cyan-950/70 px-2.5 py-0.5 rounded-full border border-cyan-800/50">
+                  KÈO FIVE · SÂN PHỦI TP.HCM
+                </span>
+                <span className="text-[10px] font-bold text-amber-300 bg-amber-950/60 border border-amber-700/50 px-2 py-0.5 rounded-full">
+                  PRO V2.5
+                </span>
+              </div>
+
+              <h1 className="text-3xl font-black italic tracking-tight text-white uppercase leading-none">
+                TẠO ĐỘI.<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-400">ĐỦ QUÂN SỐ.</span><br />
+                CÁP KÈO.
               </h1>
+
               <p className="text-xs text-slate-300 leading-relaxed">
-                Từ đăng tin tìm đối thủ bóng đá phong trào truyền thống đến matchmaking thể thức Esports. Tích hợp sơ đồ chiến thuật 5v5/7v7, bản đồ nhiệt, và phòng chốt kèo hai đội trưởng.
+                Nền tảng bóng đá phủi TP.HCM: Tạo đội bóng, mời cầu thủ, duyệt thành viên tự động, set lịch thi đấu và kiểm tra quân số nghiêm ngặt trước khi mở khóa cáp kèo!
               </p>
 
-              <div className="space-y-3 pt-2 text-xs">
-                <div className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <div className="w-7 h-7 rounded-lg bg-teal-500/10 text-teal-300 border border-teal-500/30 flex items-center justify-center font-black text-xs shrink-0">
-                    01
+              {/* Feature Highlights */}
+              <div className="space-y-2.5 pt-1 text-xs">
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-3 shadow-sm hover:border-cyan-500/40 transition-colors">
+                  <div className="flex items-center gap-2 text-cyan-300 font-bold text-xs uppercase">
+                    <Users className="w-4 h-4 text-cyan-400" /> 01. Quản Lý Đội &amp; Tuyển Quân
                   </div>
-                  <div>
-                    <h4 className="font-bold text-white text-xs">Bảng Tin Cáp Kèo Phủi</h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Lọc theo quận, sân 5/7, giờ đá, trình độ; nhận hoặc xin kèo chỉ với 1 chạm.</p>
-                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Leader gửi lời mời, cầu thủ bấm Accept gia nhập ngay vào danh sách thi đấu chính thức.
+                  </p>
                 </div>
 
-                <div className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <div className="w-7 h-7 rounded-lg bg-teal-500/10 text-teal-300 border border-teal-500/30 flex items-center justify-center font-black text-xs shrink-0">
-                    02
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-3 shadow-sm hover:border-amber-500/40 transition-colors">
+                  <div className="flex items-center gap-2 text-amber-300 font-bold text-xs uppercase">
+                    <Shield className="w-4 h-4 text-amber-400" /> 02. Quorum Gate Cáp Kèo
                   </div>
-                  <div>
-                    <h4 className="font-bold text-white text-xs">Đội Trưởng Ready &amp; Sơ Đồ</h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5">5 avatar đại diện ra sân. Bật Ready để kích hoạt ghép đối thủ ngang trình.</p>
-                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Lên lịch và thông báo toàn đội. Bắt buộc đủ 5/5 người điểm danh có mặt mới được chốt kèo.
+                  </p>
                 </div>
 
-                <div className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <div className="w-7 h-7 rounded-lg bg-teal-500/10 text-teal-300 border border-teal-500/30 flex items-center justify-center font-black text-xs shrink-0">
-                    03
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-900/80 p-3 shadow-sm hover:border-emerald-500/40 transition-colors">
+                  <div className="flex items-center gap-2 text-emerald-300 font-bold text-xs uppercase">
+                    <Trophy className="w-4 h-4 text-emerald-400" /> 03. Hiệu Ứng Thắng/Thua CS2
                   </div>
-                  <div>
-                    <h4 className="font-bold text-white text-xs">Phòng VS &amp; Xác Nhận Kèo</h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Hai bên xác nhận giờ đá, chi phí và sân bóng trước khi ra sân thi đấu.</p>
-                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Màn ăn mừng CS2 Victory / Defeat hoành tráng với âm thanh nổ sấm rền và vinh danh MVP.
+                  </p>
                 </div>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 flex flex-col gap-2">
+                <button
+                  onClick={() => handleTriggerCS2('victory')}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:brightness-110 text-slate-950 font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20"
+                >
+                  <Trophy className="w-4 h-4" /> Trải Nghiệm CS2 Victory
+                </button>
                 <button
                   onClick={() => {
                     sounds.playClick();
                     setViewMode('dashboard');
                   }}
-                  className="inline-flex items-center gap-2 text-xs font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-cyan-400 hover:text-white transition-colors pt-1"
                 >
-                  Mở chế độ Full Grid to rộng <ArrowRight className="w-3.5 h-3.5" />
+                  Mở chế độ Full Grid toàn màn hình <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
-            {/* Interactive Phone Frame */}
-            <div className="w-full md:w-[412px] h-[100dvh] md:h-[844px] md:max-h-[calc(100vh-60px)] md:rounded-[42px] md:border-[8px] md:border-[#243142] md:outline md:outline-2 md:outline-[#0b121e] md:shadow-[0_25px_80px_rgba(0,0,0,0.8),0_0_50px_rgba(46,203,207,0.15)] bg-[#080d18] flex flex-col overflow-hidden relative">
-              {/* Phone Status Bar (Mock iOS/Android status) */}
-              <div className="h-9 px-6 flex items-end justify-between text-[11px] font-bold text-slate-300 select-none shrink-0 z-20">
-                <span>21:14</span>
-                <div className="hidden sm:block w-20 h-4 bg-slate-950 rounded-full mx-auto" />
-                <div className="flex items-center gap-1 text-[10px]">
+            {/* Interactive Phone Frame - Modern Curvature with Ambient Glow */}
+            <div className="w-full md:w-[412px] h-[100dvh] md:h-[844px] md:max-h-[calc(100vh-60px)] md:rounded-[44px] md:border-[8px] md:border-[#202c3e] bg-[#070b14] flex flex-col overflow-hidden relative shadow-[0_25px_80px_rgba(0,0,0,0.85),0_0_50px_rgba(6,182,212,0.15)]">
+              {/* Dynamic Island / Status Bar */}
+              <div className="h-9 px-6 flex items-center justify-between text-[11px] font-bold text-slate-400 select-none shrink-0 z-20 border-b border-slate-800/60 bg-slate-950/80 backdrop-blur-md">
+                <span>TP.HCM · 21:30</span>
+                <div className="hidden sm:block w-20 h-4 bg-slate-950 rounded-full mx-auto border border-slate-800" />
+                <div className="flex items-center gap-1.5 text-cyan-400 text-[10px]">
                   <span>5G</span>
                   <span>100%</span>
                 </div>
               </div>
 
               {/* Scrollable Screen Body */}
-              <div className="flex-1 overflow-y-auto px-4 py-2 no-scrollbar relative z-10">
+              <div className="flex-1 overflow-y-auto px-3.5 py-3 no-scrollbar relative z-10">
                 {renderTabContent()}
               </div>
 
@@ -531,15 +713,16 @@ export function FootballApp() {
                 setActiveTab={setActiveTab}
                 hasActiveMatch={Boolean(activeMatch)}
                 captainReady={captainReady}
+                pendingInvitesCount={teamInvites.filter((i) => i.status === 'pending').length}
               />
             </div>
           </div>
         ) : (
           /* Full Screen Responsive Grid Dashboard */
           <div className="w-full max-w-7xl mx-auto space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <span className="text-xs font-bold text-cyan-400 uppercase tracking-widest">
-                FULL GRID VIEW · TP.HCM FOOTBALL DASHBOARD
+                FULL GRID DASHBOARD · KÈO FIVE SÂN PHỦI TP.HCM
               </span>
               <button
                 onClick={() => {
@@ -548,11 +731,11 @@ export function FootballApp() {
                 }}
                 className="text-xs font-bold text-slate-400 hover:text-white underline"
               >
-                ← Quay lại khung điện thoại
+                ← Chuyển về khung điện thoại (Mobile Frame)
               </button>
             </div>
 
-            <div className="bg-[#0c1524] rounded-3xl border border-slate-800 p-4 sm:p-6 shadow-2xl">
+            <div className="rounded-3xl border border-slate-800 bg-[#0a101b]/95 p-5 sm:p-7 shadow-2xl backdrop-blur-xl">
               {renderTabContent()}
             </div>
           </div>
@@ -563,9 +746,9 @@ export function FootballApp() {
       {toastMessage && (
         <div
           role="status"
-          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-teal-300 text-slate-950 font-black text-xs shadow-2xl flex items-center gap-2 animate-bounce transition-all border border-teal-200"
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-cyan-400 text-black font-mono font-black text-xs shadow-2xl flex items-center gap-2 transition-all border border-cyan-200"
         >
-          <Zap className="w-4 h-4 text-slate-950" />
+          <Zap className="w-4 h-4 text-black" />
           <span>{toastMessage}</span>
         </div>
       )}
@@ -595,6 +778,7 @@ export function FootballApp() {
         requestsCount={requests.length}
         hasMatch={Boolean(activeMatch)}
         onClear={() => {}}
+        notifications={teamNotifications}
       />
 
       <MatchReportModal
@@ -602,6 +786,14 @@ export function FootballApp() {
         onClose={() => setIsReportModalOpen(false)}
         match={activeMatch}
         onCompleteMatch={handleCompleteMatch}
+      />
+
+      {/* CS2 Victory / Defeat Showcase Modal */}
+      <CS2MatchShowcase
+        outcome={cs2Outcome}
+        isOpen={isCS2Open}
+        onClose={() => setIsCS2Open(false)}
+        onSwitchMode={handleTriggerCS2}
       />
     </div>
   );

@@ -15,6 +15,8 @@ export interface Player {
   hair: string;
   jersey: string;
   style: number;
+  phone?: string;
+  status?: 'active' | 'pending';
 }
 
 export type TeamTier = 'Đồng' | 'Bạc' | 'Vàng' | 'Bạch Kim' | 'Kim Cương' | 'Elite';
@@ -32,6 +34,9 @@ export interface Team {
   draws: number;
   losses: number;
   accentColor: string;
+  leaderId?: string;
+  foundedYear?: string;
+  slogan?: string;
 }
 
 export type MatchType = 'Đối thủ' | 'Cầu thủ lẻ';
@@ -125,4 +130,77 @@ export interface FilterState {
   court: string;
   level: string;
   search: string;
+}
+
+/* New: Team Roster, RSVP Attendance & Match Schedule */
+export type AttendanceStatus = 'in' | 'out' | 'pending';
+
+export interface ScheduledMatch {
+  id: string;
+  teamId: string;
+  title: string;
+  format: MatchFormat;
+  requiredPlayers: number; // 5 for 5v5, 7 for 7v7, 11 for 11v11
+  date: string;
+  time: string;
+  venue: string;
+  district: string;
+  opponent?: string;
+  courtStatus: CourtStatus;
+  cost: string;
+  note: string;
+  attendance: Record<string, AttendanceStatus>; // memberId -> 'in' | 'out' | 'pending'
+  status: 'draft' | 'rsvp_open' | 'ready_to_match' | 'matched' | 'completed';
+  createdAt: string;
+}
+
+export interface TeamInvite {
+  id: string;
+  teamId: string;
+  teamName: string;
+  invitedName: string;
+  invitedPhone: string;
+  position: PositionCategory;
+  role: PlayerRole;
+  status: 'pending' | 'accepted' | 'declined';
+  invitedBy: string;
+  createdAt: string;
+}
+
+export interface TeamNotification {
+  id: string;
+  teamId: string;
+  title: string;
+  message: string;
+  type: 'match_scheduled' | 'member_joined' | 'member_ready' | 'invite_received' | 'rsvp_update';
+  matchId?: string;
+  timestamp: number;
+  read: boolean;
+}
+
+/* CS2 End-of-Match Lineup Showcase */
+export interface CS2AgentPose {
+  player: Player;
+  killsOrGoals: number;
+  assists: number;
+  staminaUsed: number;
+  title: string;
+  weaponOrGear: string;
+  isMvp?: boolean;
+}
+
+export interface CS2MatchOutcome {
+  type: 'victory' | 'defeat';
+  scoreA: number;
+  scoreB: number;
+  teamA: Team;
+  teamB: Team;
+  mvp: {
+    name: string;
+    shirt: string;
+    award: string;
+    mvpStarCount: number;
+  };
+  headline: string;
+  subheadline: string;
 }

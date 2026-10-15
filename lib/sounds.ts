@@ -1,4 +1,4 @@
-// Web Audio API sound synthesizer for tactile micro-interactions
+// Web Audio API sound synthesizer for tactile micro-interactions and CS2 esports audio
 
 class SoundController {
   private ctx: AudioContext | null = null;
@@ -80,7 +80,7 @@ class SoundController {
       if (!ctx) return;
       const now = ctx.currentTime;
 
-      // Chord sequence: D4 -> G4 -> B4
+      // Chord sequence: D4 -> G4 -> B4 -> D5
       const freqs = [293.66, 392.0, 493.88, 587.33];
       freqs.forEach((f, idx) => {
         const osc = ctx.createOscillator();
@@ -137,9 +137,124 @@ class SoundController {
         osc2.stop(start + dur);
       };
 
-      // Two quick sharp whistle blasts
       blast(now, 0.14);
       blast(now + 0.2, 0.26);
+    } catch {
+      // Ignore
+    }
+  }
+
+  // CS2 Victory Stinger & Fanfare
+  public playCS2Victory(): void {
+    if (!this.enabled) return;
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+
+      // Heavy bass impact kick
+      const kick = ctx.createOscillator();
+      const kickGain = ctx.createGain();
+      kick.type = 'triangle';
+      kick.frequency.setValueAtTime(160, now);
+      kick.frequency.exponentialRampToValueAtTime(35, now + 0.4);
+      kickGain.gain.setValueAtTime(0.3, now);
+      kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      kick.connect(kickGain);
+      kickGain.connect(ctx.destination);
+      kick.start(now);
+      kick.stop(now + 0.4);
+
+      // Heroic triumphant brass arpeggio (C4 -> E4 -> G4 -> C5 -> E5)
+      const notes = [261.63, 329.63, 392.0, 523.25, 659.25];
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        const start = now + idx * 0.09;
+        osc.frequency.setValueAtTime(freq, start);
+
+        gain.gain.setValueAtTime(0.12, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.6);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(start);
+        osc.stop(start + 0.6);
+      });
+    } catch {
+      // Ignore
+    }
+  }
+
+  // CS2 Defeat Stinger (Deep gloomy distorted warning)
+  public playCS2Defeat(): void {
+    if (!this.enabled) return;
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+
+      // Deep descending drone
+      const sub = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      sub.type = 'sawtooth';
+      sub.frequency.setValueAtTime(110, now);
+      sub.frequency.linearRampToValueAtTime(55, now + 0.8);
+      subGain.gain.setValueAtTime(0.25, now);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+      sub.connect(subGain);
+      subGain.connect(ctx.destination);
+      sub.start(now);
+      sub.stop(now + 0.8);
+
+      // Dissonant interval (tritone)
+      const tritone = ctx.createOscillator();
+      const tritoneGain = ctx.createGain();
+      tritone.type = 'triangle';
+      tritone.frequency.setValueAtTime(155.56, now + 0.1);
+      tritone.frequency.linearRampToValueAtTime(77.78, now + 0.9);
+      tritoneGain.gain.setValueAtTime(0.15, now + 0.1);
+      tritoneGain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+      tritone.connect(tritoneGain);
+      tritoneGain.connect(ctx.destination);
+      tritone.start(now + 0.1);
+      tritone.stop(now + 0.9);
+    } catch {
+      // Ignore
+    }
+  }
+
+  // Tactical Radio Ping for notifications and invites
+  public playTacticalPing(): void {
+    if (!this.enabled) return;
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(880, now);
+      gain1.gain.setValueAtTime(0.09, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.08);
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1320, now + 0.09);
+      gain2.gain.setValueAtTime(0.12, now + 0.09);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.09);
+      osc2.stop(now + 0.2);
     } catch {
       // Ignore
     }
